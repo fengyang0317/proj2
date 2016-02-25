@@ -21,11 +21,22 @@ void barrier(int tid)
 		while (sense != thread_sense[tid]);     /* spin */
 	}
 }
+struct timespec start, end;
 void *inc(void *_t) {
 	int t = *((int*) _t);
+    barrier(t);
+    if (t == 0) {
+        clock_gettime(CLOCK_REALTIME, &start);
+    }
+    barrier(t);
 	for (int j = 0; j < i; j++) {
 		barrier(t);
 	}
+    if (t == 0) {
+        clock_gettime(CLOCK_REALTIME, &end);
+        double ti = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+        cout << ti << endl;
+    }
 	pthread_exit(NULL);
 }
 

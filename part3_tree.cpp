@@ -43,13 +43,25 @@ void combining_barrier(int t, bool& sense) {
 	sense = !sense;
 }
 
+struct timespec start, end;
 void *inc(void *_t) {
 	int t = *((int*) _t);
 	bool sense = 1;
+    combining_barrier(t, sense);
+    if (t == 1) {
+        clock_gettime(CLOCK_REALTIME, &start);
+    }
+    combining_barrier(t, sense);
 	for (int j = 0; j < i; j++) {
 		combining_barrier(t, sense);
-		cout << t << ' ' << j << endl;
+        //cout << t << ' ' << j << endl;
 	}
+    combining_barrier(t, sense);
+    if (t == 1) {
+        clock_gettime(CLOCK_REALTIME, &end);
+        double ti = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+        cout << ti << endl;
+    }
 	pthread_exit(NULL);
 }
 

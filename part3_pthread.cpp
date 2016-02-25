@@ -3,8 +3,9 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 using namespace std;
-int t = 4;
+int t = 4, i = 10000;
 pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 void barrier (int expect)
@@ -23,16 +24,27 @@ void barrier (int expect)
 
 	pthread_mutex_unlock (&mut);	//unlock
 }
-void *inc(void *_i) {
-	int i = *((int*) _i);
+struct timespec start, end;
+void *inc(void *_t) {
+    int tid = *((int*) _t);
+    barrier(t);
+    if (tid == 0) {
+        clock_gettime(CLOCK_REALTIME, &start);
+    }
+    barrier(t);
 	for (int j = 0; j < i; j++) {
 		barrier(t);
 	}
+    barrier(t);
+    if (tid == 0) {
+        clock_gettime(CLOCK_REALTIME, &end);
+        double ti = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+        cout << ti << endl;
+    }
 	pthread_exit(NULL);
 }
 
 int main(int argc, char *argv[]) {
-	int i = 10000;
 	void *status;
 	char rc;
 	while ((rc = getopt (argc, argv, "hi:t:")) != -1)
@@ -52,8 +64,10 @@ int main(int argc, char *argv[]) {
 	printf("%d threads, i = %d\n", t, i);
 
 	pthread_t threads[t];
+    int param[t];
 	for (int j = 0; j < t; j++) {
-		pthread_create(threads + j, NULL, inc, &i);
+        param[j] = j;
+        pthread_create(threads + j, NULL, inc, param + j);
 	}
 	for (int j = 0; j < t; j++) {
 		pthread_join(threads[j], &status);
