@@ -6,19 +6,23 @@
 #include "atomic_ops.h"
 using namespace std;
 
-volatile unsigned long counter = 0;
+ticket_lock_t lock;
+
+int counter = 0;
 void *inc(void *_i) {
 	int i = *((int*) _i);
 	for (int j = 0; j < i; j++) {
-		if (counter >= i)
-			pthread_exit(NULL);
-		fai(&counter);
+		ticket_acquire(&lock);
+		counter++;
 		//cout << counter << endl;
+		ticket_release(&lock);
 	}
 	pthread_exit(NULL);
 }
 
 int main(int argc, char *argv[]) {
+	lock.next_ticket = 0;
+	lock.now_serving = 0;
 	int i = 10000, t = 4;
 	void *status;
 	char rc;
@@ -45,6 +49,5 @@ int main(int argc, char *argv[]) {
 	for (int j = 0; j < t; j++) {
 		pthread_join(threads[j], &status);
 	}
-	cout << counter << endl;
 	return 0;
 }

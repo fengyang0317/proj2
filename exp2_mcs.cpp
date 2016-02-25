@@ -6,19 +6,24 @@
 #include "atomic_ops.h"
 using namespace std;
 
-volatile unsigned long counter = 0;
+mcs_qnode_t **lock;
+
+int counter = 0;
 void *inc(void *_i) {
 	int i = *((int*) _i);
+	mcs_qnode_t local;
 	for (int j = 0; j < i; j++) {
-		if (counter >= i)
-			pthread_exit(NULL);
-		fai(&counter);
+		mcs_acquire(lock, &local);
+		counter++;
 		//cout << counter << endl;
+		mcs_release(lock, &local);
 	}
 	pthread_exit(NULL);
 }
 
 int main(int argc, char *argv[]) {
+	lock = new mcs_qnode_t*[1];
+	lock[0] = 0;
 	int i = 10000, t = 4;
 	void *status;
 	char rc;
@@ -45,6 +50,5 @@ int main(int argc, char *argv[]) {
 	for (int j = 0; j < t; j++) {
 		pthread_join(threads[j], &status);
 	}
-	cout << counter << endl;
 	return 0;
 }

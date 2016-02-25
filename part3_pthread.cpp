@@ -3,23 +3,36 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "atomic_ops.h"
 using namespace std;
+int t = 4;
+pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+void barrier (int expect)
+{
+	static int arrived = 0;
 
-volatile unsigned long counter = 0;
+	pthread_mutex_lock (&mut);	//lock
+
+	arrived++;
+	if (arrived < expect)
+		pthread_cond_wait (&cond, &mut);
+	else {
+		arrived = 0;		// reset the barrier before broadcast is important
+		pthread_cond_broadcast (&cond);
+	}
+
+	pthread_mutex_unlock (&mut);	//unlock
+}
 void *inc(void *_i) {
 	int i = *((int*) _i);
 	for (int j = 0; j < i; j++) {
-		if (counter >= i)
-			pthread_exit(NULL);
-		fai(&counter);
-		//cout << counter << endl;
+		barrier(t);
 	}
 	pthread_exit(NULL);
 }
 
 int main(int argc, char *argv[]) {
-	int i = 10000, t = 4;
+	int i = 10000;
 	void *status;
 	char rc;
 	while ((rc = getopt (argc, argv, "hi:t:")) != -1)
@@ -45,6 +58,5 @@ int main(int argc, char *argv[]) {
 	for (int j = 0; j < t; j++) {
 		pthread_join(threads[j], &status);
 	}
-	cout << counter << endl;
 	return 0;
 }

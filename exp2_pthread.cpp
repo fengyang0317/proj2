@@ -3,17 +3,16 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "atomic_ops.h"
 using namespace std;
 
-volatile unsigned long counter = 0;
+pthread_mutex_t mutex;
+int counter = 0;
 void *inc(void *_i) {
 	int i = *((int*) _i);
 	for (int j = 0; j < i; j++) {
-		if (counter >= i)
-			pthread_exit(NULL);
-		fai(&counter);
-		//cout << counter << endl;
+		pthread_mutex_lock(&mutex);
+		counter++;
+		pthread_mutex_unlock(&mutex);
 	}
 	pthread_exit(NULL);
 }
@@ -38,6 +37,7 @@ int main(int argc, char *argv[]) {
 
 	printf("%d threads, i = %d\n", t, i);
 
+	pthread_mutex_init(&mutex, NULL);
 	pthread_t threads[t];
 	for (int j = 0; j < t; j++) {
 		pthread_create(threads + j, NULL, inc, &i);
@@ -45,6 +45,6 @@ int main(int argc, char *argv[]) {
 	for (int j = 0; j < t; j++) {
 		pthread_join(threads[j], &status);
 	}
-	cout << counter << endl;
+	pthread_mutex_destroy(&mutex);
 	return 0;
 }

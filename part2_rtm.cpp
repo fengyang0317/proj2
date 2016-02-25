@@ -3,17 +3,22 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "atomic_ops.h"
+#include "rtm.h"
+#include <string.h>
 using namespace std;
+#define N 1000
 
-volatile unsigned long counter = 0;
+int counter[N];
 void *inc(void *_i) {
 	int i = *((int*) _i);
+	int loc, status;
 	for (int j = 0; j < i; j++) {
-		if (counter >= i)
-			pthread_exit(NULL);
-		fai(&counter);
-		//cout << counter << endl;
+		loc = rand() % N;
+		while((status = _xbegin()) != _XBEGIN_STARTED)
+			;
+		counter[loc]++;
+		//cout << loc << ' ' << counter[loc] << endl;
+		_xend();
 	}
 	pthread_exit(NULL);
 }
@@ -45,6 +50,5 @@ int main(int argc, char *argv[]) {
 	for (int j = 0; j < t; j++) {
 		pthread_join(threads[j], &status);
 	}
-	cout << counter << endl;
 	return 0;
 }

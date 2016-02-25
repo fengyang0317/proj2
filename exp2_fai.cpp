@@ -10,10 +10,7 @@ volatile unsigned long counter = 0;
 void *inc(void *_i) {
 	int i = *((int*) _i);
 	for (int j = 0; j < i; j++) {
-		if (counter >= i)
-			pthread_exit(NULL);
-		fai(&counter);
-		//cout << counter << endl;
+		tas(&counter);
 	}
 	pthread_exit(NULL);
 }
@@ -45,6 +42,5 @@ int main(int argc, char *argv[]) {
 	for (int j = 0; j < t; j++) {
 		pthread_join(threads[j], &status);
 	}
-	cout << counter << endl;
 	return 0;
 }

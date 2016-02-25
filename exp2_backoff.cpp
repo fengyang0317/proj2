@@ -6,14 +6,16 @@
 #include "atomic_ops.h"
 using namespace std;
 
-volatile unsigned long counter = 0;
+tatas_lock_t lock = 0;
+
+int counter = 0;
 void *inc(void *_i) {
 	int i = *((int*) _i);
 	for (int j = 0; j < i; j++) {
-		if (counter >= i)
-			pthread_exit(NULL);
-		fai(&counter);
+		tatas_acquire(&lock);
+		counter++;
 		//cout << counter << endl;
+		tatas_release(&lock);
 	}
 	pthread_exit(NULL);
 }
@@ -45,6 +47,5 @@ int main(int argc, char *argv[]) {
 	for (int j = 0; j < t; j++) {
 		pthread_join(threads[j], &status);
 	}
-	cout << counter << endl;
 	return 0;
 }
