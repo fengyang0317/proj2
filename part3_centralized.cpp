@@ -6,6 +6,7 @@
 #include "atomic_ops.h"
 #define MAX_THREADS 1000
 using namespace std;
+const int totalcores = 72;
 int i= 10000, nthreads = 4;
 void barrier(int tid)
 {
@@ -61,9 +62,16 @@ int main(int argc, char *argv[]) {
 
 	pthread_t threads[nthreads];
 	int _t[nthreads];
+    cpu_set_t mask;
 	for (int j = 0; j < nthreads; j++) {
 		_t[j] = j;
 		pthread_create(threads + j, NULL, inc, _t + j);
+        CPU_ZERO(&mask);
+        CPU_SET(j % totalcores, &mask);
+        if (pthread_setaffinity_np(threads[j], sizeof(mask), &mask) < 0) {
+            printf("pin error\n");
+            exit(1);
+        }
 	}
 	for (int j = 0; j < nthreads; j++) {
 		pthread_join(threads[j], &status);

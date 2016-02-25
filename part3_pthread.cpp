@@ -4,7 +4,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <sched.h>
 using namespace std;
+const int totalcores = 72;
 int t = 4, i = 10000;
 pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
@@ -65,9 +67,16 @@ int main(int argc, char *argv[]) {
 
 	pthread_t threads[t];
     int param[t];
+    cpu_set_t mask;
 	for (int j = 0; j < t; j++) {
         param[j] = j;
         pthread_create(threads + j, NULL, inc, param + j);
+        CPU_ZERO(&mask);
+        CPU_SET(j % totalcores, &mask);
+        if (pthread_setaffinity_np(threads[j], sizeof(mask), &mask) < 0) {
+            printf("pin error\n");
+            exit(1);
+        }
 	}
 	for (int j = 0; j < t; j++) {
 		pthread_join(threads[j], &status);
